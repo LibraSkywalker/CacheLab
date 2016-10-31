@@ -73,7 +73,7 @@ int main(int argc, char* argv[]){
     /*  Register transpose functions */
     registerFunctions();
 
-    /* Fill A with data */
+    /* Fill A with tag */
     initMatrix(M,N, A, B); 
 
     /* Record marker addresses */

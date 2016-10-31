@@ -24,7 +24,7 @@ void printSummary(int hits,  /* number of  hits */
 				  int misses, /* number of misses */
 				  int evictions); /* number of evictions */
 
-/* Fill the matrix with data */
+/* Fill the matrix with tag */
 void initMatrix(int M, int N, int A[N][M], int B[M][N]);
 
 /* The baseline trans function that produces correct results. */
