@@ -22,6 +22,17 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
+    const int interval = 8;
+    int i,j,startX,startY;
+    for (startX = 0; startX < N; startX += interval)
+        for (startY = 0; startY < M; startY += interval)
+            for (i = 0; i < interval; i++)
+                for (j = 0; j < interval; j++){
+                    if (startX + i >= N || startY + j >= M) continue;
+                    int nowX = i + startX;
+                    int nowY = j + startY;
+                    B[nowY][nowX] = A[nowX][nowY];
+                }
 }
 
 /* 
