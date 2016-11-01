@@ -59,17 +59,17 @@ void initialize(int argc,char* argv[]){
     int i;
     int setBits = 0,way = 0,blockBit = 0;
     for (i = 0; i < argc; i++){
-        if (strcmp(argv[i],"-s")){
+        if (strcmp(argv[i],"-s") == 0){
             i++;
             setBits = atoi(argv[i]);
-        } else if (strcmp(argv[i],"-E")){
+        } else if (strcmp(argv[i],"-E") == 0){
             i++;
             way = atoi(argv[i]);
-        } else if (strcmp(argv[i],"-b")){
+        } else if (strcmp(argv[i],"-b") == 0){
             i++;
             blockBit = atoi(argv[i]);
 
-        } else if (strcmp(argv[i],"-t")){
+        } else if (strcmp(argv[i],"-t") == 0){
             i++;
             input = fopen(argv[i],"r");
         }
@@ -100,13 +100,15 @@ void tryAccess(struct Cache* cache, int position) {
     cache->num_misses++;
     int way = LRU(cache,index);
     if (cache->tag[index][way] > -1)
-        cache->num_evictions++;
+        cache->num_evictions++;	
+	cache->tag[index][way] = tag;
 }
 
 void simulate(FILE * input) {
     char command;
     while (fscanf(input,"%c",&command) != EOF){
-        while (command <= ' ') fscanf(input,"%c",&command);
+        while (command <= ' ' && fscanf(input,"%c",&command) != EOF);
+	if(feof(input)) return;
         int position,length;
         fscanf(input,"%d,%d",&position,&length);
 

@@ -22,23 +22,149 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
-    const int interval = 8;
-    int i,j,startX,startY;
-    for (startX = 0; startX < N; startX += interval)
-        for (startY = 0; startY < M; startY += interval)
-            for (i = 0; i < interval; i++)
-                for (j = 0; j < interval; j++){
-                    if (startX + i >= N || startY + j >= M) continue;
-                    int nowX = i + startX;
-                    int nowY = j + startY;
-                    B[nowY][nowX] = A[nowX][nowY];
-                }
+    int interval = 16;
+    if (M == 61) {
+		interval = 16;
+    	int i,j,startX,startY;
+    	for (startX = 0; startX < N; startX += interval)
+        	for (startY = 0; startY < M; startY += interval)
+        	    for (i = 0; i < interval; i++)
+        	        for (j = 0; j < interval; j++){
+        	            if (startX + i >= N || startY + j >= M) continue;
+        	            B[startY + j][startX + i] = A[startX + i][startY + j];
+        	        }
+		return;
+	}
+ 
+	interval = 8;
+	int gap = 4;
+	int startX,startY;	
+	for (startY = 0; startY < M; startY += interval)
+		for (startX = 0; startX < N; startX += interval){
+			int nowX = startY;
+			int nowY = startX;
+			
+			int nextX = nowX;
+			int nextY = nowY;
+			
+			do{ 
+				nextY += interval;
+				if (nextY >= N){
+					nextX += interval;
+					nextY -= N;
+				}
+			} while (startY == nextY);
+
+			int nextX_2 = nextX;
+			int nextY_2 = nextY;
+
+			do{ 
+				nextY_2 += interval;
+				if (nextY_2 >= N){
+					nextX_2 += interval;
+					nextY_2 -= N;				
+				}
+			} while (startY == nextY_2);
+
+			if (nextX >= M){
+				for (int i = 0; i < interval; i++)
+					for (int j = 0; j < interval; j++)
+						B[nowX + j][nowY + i] = A[startX + i][startY + j];			
+			} else {
+				for (int i = 0; i < gap; i++)
+					for (int j = 0; j < interval; j++)
+						B[nextX + i][nextY + j] = A[startX + i][startY + j];			
+				
+				for (int i = 0; i < gap; i++)
+					for (int j = 0; j < interval; j++)
+						B[nextX_2 + i][nextY_2 + j] = A[startX + gap + i][startY + j];		
+
+				for (int i = 0; i < gap; i++)
+					for (int j = 0; j < gap; j++){
+						B[nowX + j][nowY + i] = B[nextX + i][nextY + j];
+						B[nowX + j][nowY + gap + i] = B[nextX_2 + i][nextY_2 + j];	
+					}
+				
+				for (int i = 0; i < gap; i++)
+					for (int j = 0; j < gap; j++){
+						B[nowX + gap + j][nowY + i] = B[nextX + i][nextY + gap + j];
+						B[nowX + gap + j][nowY + gap + i] = B[nextX_2 + i][nextY_2 + gap + j];	
+					}			
+			}
+			
+		}		
 }
 
 /* 
  * You can define additional transpose functions below. We've defined
  * a simple one below to help you get started. 
  */ 
+
+char transpose_opt_desc[] = "optimize for 64x64";
+void transpose_opt(int M, int N, int A[N][M], int B[M][N])
+{
+	int interval = 8;
+	int gap = 4;
+	int startX,startY;	
+	for (startY = 0; startY < M; startY += interval)
+		for (startX = 0; startX < N; startX += interval){
+			int nowX = startY;
+			int nowY = startX;
+			
+			int nextX = nowX;
+			int nextY = nowY;
+			
+			do{ 
+				nextY += interval;
+				if (nextY >= N){
+					nextX += interval;
+					nextY -= N;
+				}
+			} while (startY == nextY);
+
+			int nextX_2 = nextX;
+			int nextY_2 = nextY;
+
+			do{ 
+				nextY_2 += interval;
+				if (nextY_2 >= N){
+					nextX_2 += interval;
+					nextY_2 -= N;				
+				}
+			} while (startY == nextY_2);
+
+			if (nextX >= M){
+				for (int i = 0; i < interval; i++)
+					for (int j = 0; j < interval; j++)
+						B[nowX + j][nowY + i] = A[startX + i][startY + j];			
+			} else {
+				for (int i = 0; i < gap; i++)
+					for (int j = 0; j < interval; j++)
+						B[nextX + i][nextY + j] = A[startX + i][startY + j];			
+				
+				for (int i = 0; i < gap; i++)
+					for (int j = 0; j < interval; j++)
+						B[nextX_2 + i][nextY_2 + j] = A[startX + gap + i][startY + j];		
+
+				for (int i = 0; i < gap; i++)
+					for (int j = 0; j < gap; j++){
+						B[nowX + j][nowY + i] = B[nextX + i][nextY + j];
+						B[nowX + j][nowY + gap + i] = B[nextX_2 + i][nextY_2 + j];	
+					}
+				
+				for (int i = 0; i < gap; i++)
+					for (int j = 0; j < gap; j++){
+						B[nowX + gap + j][nowY + i] = B[nextX + i][nextY + gap + j];
+						B[nowX + gap + j][nowY + gap + i] = B[nextX_2 + i][nextY_2 + gap + j];	
+					}			
+			}
+			
+		}		
+			
+			
+		
+
+}
 
 /* 
  * trans - A simple baseline transpose function, not optimized for the cache.
@@ -70,7 +196,10 @@ void registerFunctions()
     registerTransFunction(transpose_submit, transpose_submit_desc); 
 
     /* Register any additional transpose functions */
-    registerTransFunction(trans, trans_desc); 
+    registerTransFunction(transpose_opt, transpose_opt_desc); 
+
+
+    registerTransFunction(transpose_submit, transpose_submit_desc); 
 
 }
 
