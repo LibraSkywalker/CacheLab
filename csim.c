@@ -5,7 +5,7 @@
 
 struct array;
 
-const int UNUSED = -1;
+const long long UNUSED = -1;
 
 struct Cache{
     int blockBit;
@@ -14,7 +14,7 @@ struct Cache{
     int num_hits;
     int num_misses;
     int num_evictions;
-    int ** tag;
+    long long ** tag;
     int ** LRUstate;
 } *cache;
 
@@ -25,11 +25,11 @@ struct Cache* new(int setBits,int way,int blockBit) {
     cache->way = way;
     cache->blockBit = blockBit;
     int setSize = 1 << cache->setBits;
-    cache->tag = (int **) malloc(sizeof(int*) * setSize);
+    cache->tag = (long long **) malloc(sizeof(int*) * setSize);
     cache->LRUstate = (int **) malloc(sizeof(int*) * setSize);
     int i,j;
     for (i = 0; i < setSize; ++i) {
-        cache->tag[i] = (int *) malloc(sizeof(int) * cache->way);
+        cache->tag[i] = (long long *) malloc(sizeof(int) * cache->way);
         cache->LRUstate[i] = (int *) malloc(sizeof(int) * cache->way);
     }
     for (i = 0; i < setSize; ++i)
@@ -77,7 +77,7 @@ void initialize(int argc,char* argv[]){
     cache = new(setBits,way,blockBit);
 }
 
-int LRU(struct Cache* cache, int index) {
+int persudoLRU(struct Cache* cache, int index) {
     int position = 1;
     while (position < cache->way) {
         int direction = cache->LRUstate[index][position];
@@ -87,40 +87,79 @@ int LRU(struct Cache* cache, int index) {
     return position - cache->way;
 }
 
-void tryAccess(struct Cache* cache, int position) {
-    int index = (position >> cache->blockBit) & ((1 << cache->setBits) - 1);
-    int tag = (position >> (cache->blockBit + cache->setBits));
+void persudoupdate(struct Cache* cache,int index,int position){
+	position += cache->way;
+	while (position > 1){
+		position /= 2;
+		cache->LRUstate[index][position] = 1 - cache->LRUstate[index][position]; 
+	}
+}
+
+void update(struct Cache* cache,int index,int position){
+	int i;	
+	for (i = 0; i < cache->way; i++)
+		cache->LRUstate[index][i]--;
+	cache->LRUstate[index][position] = 4;
+}
+
+int trueLRU(struct Cache* cache, int index) {
+	int i,position = 0;
+	for (i = 0; i < cache->way; i++){
+		if (cache->LRUstate[index][i] < cache-> LRUstate[index][position])
+			position = i;
+		cache->LRUstate[index][i]--;
+	}
+	cache->LRUstate[index][position] = 4;
+	return position;
+}
+
+void tryAccess(struct Cache* cache, long long position) {
+    int index =(position >> cache->blockBit) & ((1LL << cache->setBits) - 1);
+    long long tag = (position >> (cache->blockBit + cache->setBits));
+	//printf("position = %d index = %d tag = %d\n",position,index,tag);
     for (int i = 0; i < cache->way; i++){
         if (cache->tag[index][i] == tag){
             cache->num_hits ++;
+			update(cache,index,i);
+			//printf("hit!");
             return;
         }
     }
     // miss
     cache->num_misses++;
-    int way = LRU(cache,index);
-    if (cache->tag[index][way] > -1)
+	//printf("miss!");
+    int way = trueLRU(cache,index);
+    if (cache->tag[index][way] != -1){
         cache->num_evictions++;	
+		//printf("eviction!");
+	}
 	cache->tag[index][way] = tag;
+	puts("");
 }
 
 void simulate(FILE * input) {
     char command;
     while (fscanf(input,"%c",&command) != EOF){
         while (command <= ' ' && fscanf(input,"%c",&command) != EOF);
-	if(feof(input)) return;
-        int position,length;
-        fscanf(input,"%d,%d",&position,&length);
+		if(feof(input)) return;
+        long long position;
+		length;
+        fscanf(input,"%x,%d",&position,&length);
 
-        switch (command){
+		//printf("address = %d length = %d\n",position,length);
+		        
+		switch (command){
             case 'L' :
                 tryAccess(cache,position);
+				break;
             case 'S' :
                 tryAccess(cache,position);
-            case 'M' :
+				break;            
+			case 'M' :
                 tryAccess(cache,position);
                 tryAccess(cache,position);
-            default:;
+				break;            
+			default:;
         }
     }
 }
