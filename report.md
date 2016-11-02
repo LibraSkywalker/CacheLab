@@ -58,8 +58,8 @@
 >     (4,2,4)       4       5       2       4       5       2  traces/yi.trace
 >     (2,1,4)       2       3       1       2       3       1  traces/dave.trace
 >     (2,1,3)     167      71      67     167      71      67  traces/trans.trace
->     (2,2,3)     189      49      41     201      37      29  traces/trans.trace
->     (2,4,3)     205      33      19     212      26      10  traces/trans.trace
+>     (2,2,3)     201      37      29     201      37      29  traces/trans.trace
+>     (2,4,3)     208      30      16     212      26      10  traces/trans.trace
 >     (5,1,5)     231       7       0     231       7       0  traces/trans.trace
 >     (5,1,5)  265189   21775   21743  265189   21775   21743  traces/long.trace
 

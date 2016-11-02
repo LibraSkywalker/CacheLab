@@ -74,7 +74,9 @@ int pseudoLRU(struct Cache* cache, int index) {
 void pseudoUpdate(struct Cache* cache,int index,int position){
 	position += cache->way;
 	while (position > 1){
+        int abandonDirection = position & 1;
 		position /= 2;
+        if (abandonDirection == cache->line[index][position].LRUstate)
         cache->line[index][position].LRUstate = 1 - cache->line[index][position].LRUstate;
 	}
 }
