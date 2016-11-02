@@ -1,3 +1,7 @@
+/* Student ID: 5140309320
+ * Name      : Bill Cai
+ * Email     : caiwanxin2009@hotmail.com
+ */
 #include <stdio.h>
 #include "cachelab.h"
 #include <string.h>
@@ -57,7 +61,7 @@ void delete(struct Cache* cache) {
     free(cache);
 }
 
-int persudoLRU(struct Cache* cache, int index) {
+int pseudoLRU(struct Cache* cache, int index) {
     int position = 1;
     while (position < cache->way) {
         int direction = cache->line[index][position].LRUstate;
@@ -67,7 +71,7 @@ int persudoLRU(struct Cache* cache, int index) {
     return position - cache->way;
 }
 
-void persudoUpdate(struct Cache* cache,int index,int position){
+void pseudoUpdate(struct Cache* cache,int index,int position){
 	position += cache->way;
 	while (position > 1){
 		position /= 2;

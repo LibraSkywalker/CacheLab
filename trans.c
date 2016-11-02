@@ -1,4 +1,9 @@
-/* 
+/* Student ID: 5140309320
+ * Name      : Bill Cai
+ * Email     : caiwanxin2009@hotmail.com
+ */
+
+/*
  * trans.c - Matrix transpose B = A^T
  *
  * Each transpose function must have a prototype of the form:
@@ -6,8 +11,7 @@
  *
  * A transpose function is evaluated by counting the number of misses
  * on a 1KB direct mapped cache with a block size of 32 bytes.
- */ 
-#include <stdio.h>
+ */
 #include "cachelab.h"
 
 int is_transpose(int M, int N, int A[N][M], int B[M][N]);
@@ -22,25 +26,36 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
+
     int interval = 16;
+
     if (M == 61) {
+
 		interval = 16;
     	int i,j,startX,startY;
+
     	for (startX = 0; startX < N; startX += interval)
         	for (startY = 0; startY < M; startY += interval)
+
         	    for (i = 0; i < interval; i++)
         	        for (j = 0; j < interval; j++){
+
         	            if (startX + i >= N || startY + j >= M) continue;
         	            B[startY + j][startX + i] = A[startX + i][startY + j];
+
         	        }
+
 		return;
 	}
  
 	interval = 8;
 	int gap = 4;
-	int startX,startY;	
+
+	int startX,startY;
+
 	for (startY = 0; startY < M; startY += interval)
 		for (startX = 0; startX < N; startX += interval){
+
 			int nowX = startY;
 			int nowY = startX;
 			
@@ -67,10 +82,13 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 			} while (startY == nextY_2);
 
 			if (nextX >= M){
+
 				for (int i = 0; i < interval; i++)
 					for (int j = 0; j < interval; j++)
-						B[nowX + j][nowY + i] = A[startX + i][startY + j];			
+						B[nowX + j][nowY + i] = A[startX + i][startY + j];
+
 			} else {
+
 				for (int i = 0; i < gap; i++)
 					for (int j = 0; j < interval; j++)
 						B[nextX + i][nextY + j] = A[startX + i][startY + j];			
@@ -88,7 +106,8 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 				for (int i = 0; i < gap; i++)
 					for (int j = 0; j < gap; j++){
 						B[nowX + gap + j][nowY + i] = B[nextX + i][nextY + gap + j];
-						B[nowX + gap + j][nowY + gap + i] = B[nextX_2 + i][nextY_2 + gap + j];	
+						B[nowX + gap + j][nowY + gap + i] = B[nextX_2 + i][nextY_2 + gap + j];
+
 					}			
 			}
 			
