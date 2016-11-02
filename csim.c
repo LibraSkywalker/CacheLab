@@ -110,8 +110,10 @@ int trueLRU(struct Cache* cache, int index) {
 	for (i = 0; i < cache->way; i++){
 		if (cache->line[index][i].LRUstate < cache->line[index][position].LRUstate)
 			position = i;
-        cache->line[index][i].LRUstate--;
 	}
+    for (i = 0; i < cache->way; i++){
+        cache->line[index][i].LRUstate--;
+    }
     cache->line[index][position].LRUstate = cache->way;
     return position;
 }
@@ -121,7 +123,7 @@ void tryAccess(struct Cache* cache, long long position) {
     int tag = (int) (position >> (cache->blockBit + cache->setBits));
 	//printf("position = %d index = %d tag = %d\n",position,index,tag);
     for (int i = 0; i < cache->way; i++){
-        if (cache->line[index][i].tag == tag){
+        if (cache->line[index][i].tag == tag && cache->line[index][i].valid){
             cache->num_hits ++;
 			update(cache,index,i);
 			printf("hit ");
