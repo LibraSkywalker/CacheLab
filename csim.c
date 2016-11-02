@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-struct array;
 
+//data structure and its application
 struct CacheLine{
     int valid;
     int LRUstate;
@@ -27,12 +27,17 @@ struct Cache* new(int setBits,int way,int blockBit) {
     cache->setBits = setBits;
     cache->way = way;
     cache->blockBit = blockBit;
+
     int setSize = 1 << cache->setBits;
+
     cache->line = (struct CacheLine **) malloc(sizeof(struct CacheLine *) * setSize);
+
     int i,j;
+
     for (i = 0; i < setSize; ++i) {
         cache->line[i] = (struct CacheLine *) malloc(sizeof(struct CacheLine) * cache->way);
     }
+
     for (i = 0; i < setSize; ++i)
         for (j = 0; j < cache->way; ++j){
             cache->line[i][j].valid = 0;
@@ -45,13 +50,78 @@ struct Cache* new(int setBits,int way,int blockBit) {
 void delete(struct Cache* cache) {
     int setSize = 1 << cache->setBits;
     int i;
-    for(i = 0; i < setSize; ++i)
-    {
+    for(i = 0; i < setSize; ++i) {
         free(cache->line[i]);
     }
     free(cache->line);
     free(cache);
 }
+
+int persudoLRU(struct Cache* cache, int index) {
+    int position = 1;
+    while (position < cache->way) {
+        int direction = cache->line[index][position].LRUstate;
+        cache->line[index][position].LRUstate = 1 - cache->line[index][position].LRUstate;
+        position = 2 * position + direction;
+    }
+    return position - cache->way;
+}
+
+void persudoUpdate(struct Cache* cache,int index,int position){
+	position += cache->way;
+	while (position > 1){
+		position /= 2;
+        cache->line[index][position].LRUstate = 1 - cache->line[index][position].LRUstate;
+	}
+}
+
+int trueLRU(struct Cache* cache, int index) {
+    int i,position = 0;
+    for (i = 0; i < cache->way; i++){
+        if (cache->line[index][i].LRUstate < cache->line[index][position].LRUstate)
+            position = i;
+    }
+    for (i = 0; i < cache->way; i++){
+        cache->line[index][i].LRUstate--;
+    }
+    cache->line[index][position].LRUstate = cache->way;
+    return position;
+}
+
+void trueUpdate(struct Cache *cache, int index, int position){
+	int i;	
+	for (i = 0; i < cache->way; i++)
+		cache->line[index][i].LRUstate--;
+    cache->line[index][position].LRUstate = cache->way;
+}
+
+void tryAccess(struct Cache* cache, long long address, int verbalFlag) {
+    int index = (int) ((address >> cache->blockBit) & ((1LL << cache->setBits) - 1));
+    int tag = (int) (address >> (cache->blockBit + cache->setBits));
+    for (int i = 0; i < cache->way; i++){
+        if (cache->line[index][i].tag == tag && cache->line[index][i].valid){
+            //hit
+            cache->num_hits ++;
+            trueUpdate(cache, index, i);
+			if (verbalFlag) printf("hit ");
+            return;
+        }
+    }
+    // miss
+    cache->num_misses++;
+	if (verbalFlag) printf("miss ");
+    int way = trueLRU(cache,index);
+    if (cache->line[index][way].valid){
+        //evict
+        cache->num_evictions++;	
+		if (verbalFlag) printf("eviction ");
+
+	}
+	cache->line[index][way].tag = tag;
+    cache->line[index][way].valid = 1;
+}
+
+//main function
 
 FILE* input;
 int verbalFlag = 0;
@@ -80,93 +150,31 @@ void initialize(int argc,char* argv[]){
     cache = new(setBits,way,blockBit);
 }
 
-int persudoLRU(struct Cache* cache, int index) {
-    int position = 1;
-    while (position < cache->way) {
-        int direction = cache->line[index][position].LRUstate;
-        cache->line[index][position].LRUstate = 1 - cache->line[index][position].LRUstate;
-        position = 2 * position + direction;
-    }
-    return position - cache->way;
-}
-
-void persudoUpdate(struct Cache* cache,int index,int position){
-	position += cache->way;
-	while (position > 1){
-		position /= 2;
-        cache->line[index][position].LRUstate = 1 - cache->line[index][position].LRUstate;
-	}
-}
-
-void update(struct Cache* cache,int index,int position){
-	int i;	
-	for (i = 0; i < cache->way; i++)
-		cache->line[index][i].LRUstate--;
-    cache->line[index][position].LRUstate = cache->way;
-}
-
-int trueLRU(struct Cache* cache, int index) {
-	int i,position = 0;
-	for (i = 0; i < cache->way; i++){
-		if (cache->line[index][i].LRUstate < cache->line[index][position].LRUstate)
-			position = i;
-	}
-    for (i = 0; i < cache->way; i++){
-        cache->line[index][i].LRUstate--;
-    }
-    cache->line[index][position].LRUstate = cache->way;
-    return position;
-}
-
-void tryAccess(struct Cache* cache, long long position) {
-    int index = (int) ((position >> cache->blockBit) & ((1LL << cache->setBits) - 1));
-    int tag = (int) (position >> (cache->blockBit + cache->setBits));
-	//printf("position = %d index = %d tag = %d\n",position,index,tag);
-    for (int i = 0; i < cache->way; i++){
-        if (cache->line[index][i].tag == tag && cache->line[index][i].valid){
-            cache->num_hits ++;
-			update(cache,index,i);
-			printf("hit ");
-            return;
-        }
-    }
-    // miss
-    cache->num_misses++;
-	printf("miss ");
-    int way = trueLRU(cache,index);
-    if (cache->line[index][way].valid){
-        cache->num_evictions++;	
-		printf("eviction ");
-
-	}
-	cache->line[index][way].tag = tag;
-    cache->line[index][way].valid = 1;
-}
-
 void simulate(FILE * input) {
     char command;
     while (fscanf(input,"%c",&command) != EOF){
         while (command <= ' ' && fscanf(input,"%c",&command) != EOF);
 		if(feof(input)) return;
-        long long position;
+        long long address;
 		int length;
-        fscanf(input,"%llx,%d",&position,&length);
-        if (verbalFlag && command != 'I') printf("%c %llx,%d ",command,position,length);
+        fscanf(input,"%llx,%d",&address,&length);
+        if (verbalFlag && command != 'I') printf("%c %llx,%d ",command,address,length);
 		switch (command){
             case 'L' :
-                tryAccess(cache,position);
+                tryAccess(cache,address,verbalFlag);
 				break;
             case 'S' :
-                tryAccess(cache,position);
+                tryAccess(cache,address,verbalFlag);
 				break;            
 			case 'M' :
-                tryAccess(cache,position);
-                tryAccess(cache,position);
+                tryAccess(cache,address,verbalFlag);
+                tryAccess(cache,address,verbalFlag);
 				break;            
 			default:;
         }
         if (verbalFlag && command != 'I') puts("");
     }
+    fclose(input);
 }
 
 int main(int argc, char* argv[])
